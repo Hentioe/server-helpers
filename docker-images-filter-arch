@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# 按架构名过滤镜像列表，输出格式类似于 `docker images` 命令。
+# 一般用于存储多架构镜像的宿主机上。
+
+# 检查是否提供了参数
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <architecture>"
+    echo "Example: $0 amd64"
+    exit 1
+fi
+
+# 获取架构参数
+arch=$1
+
+# 获取所有镜像的ID
+image_ids=$(docker images -q)
+
+# 输出表头
+printf "%-50s %-25s %-12s %-20s %s\n" "REPOSITORY" "TAG" "IMAGE ID" "CREATED" "SIZE"
+
+# 遍历每个镜像ID
+for id in $image_ids; do
+    # 检查镜像架构
+    image_arch=$(docker inspect --format='{{.Architecture}}' $id)
+
+    # 如果架构匹配
+    if [ "$image_arch" = "$arch" ]; then
+        # 获取镜像信息
+        repo=$(docker inspect --format='{{index .RepoTags 0}}' $id | cut -d':' -f1)
+        tag=$(docker inspect --format='{{index .RepoTags 0}}' $id | cut -d':' -f2)
+        created=$(docker inspect --format='{{.Created}}' $id | cut -d'T' -f1)
+        size=$(docker inspect --format='{{.Size}}' $id | numfmt --to=iec-i --suffix=B --format="%.2f")
+
+        # 输出镜像信息
+        printf "%-50s %-25s %-12s %-20s %s\n" "$repo" "$tag" "${id:0:12}" "$created" "$size"
+    fi
+done
