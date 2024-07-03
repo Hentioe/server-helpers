@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# 定义颜色
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# 检查是否以 root 权限运行
+if [[ $EUID -ne 0 ]]; then
+	echo "This script must be run as root"
+	exit 1
+fi
+
+# 检查内核版本是否支持 BBR
+if [[ $(uname -r | cut -d. -f1) -lt 4 ]]; then
+	echo "Your kernel version does not support BBR. Please upgrade to version 4.9 or higher"
+	exit 1
+fi
+
+# 启用 BBR
+put_sysctl_conf() {
+	local key="$1"
+	local value="$2"
+	if grep -q "^$key\s*=" /etc/sysctl.conf; then
+		# 如果键存在，但值不同，则更新
+		if ! grep -q "^$key\s*=\s*$value\s*$" /etc/sysctl.conf; then
+			sed -i "s/^$key\s*=.*/$key=$value/" /etc/sysctl.conf
+			echo "Updated $key to $value in /etc/sysctl.conf"
+		else
+			echo "$key is already set to $value in /etc/sysctl.conf"
+		fi
+	else
+		# 如果键不存在，则添加
+		echo "$key=$value" >>/etc/sysctl.conf
+		echo "Added $key=$value to /etc/sysctl.conf"
+	fi
+}
+
+put_sysctl_conf "net.core.default_qdisc" "fq"
+put_sysctl_conf "net.ipv4.tcp_congestion_control" "bbr"
+
+# 应用更改
+echo "Applying changes. The following output shows the updated settings:"
+sysctl -p
+
+# 验证 BBR 是否已启用
+if [[ $(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}') == "bbr" ]]; then
+	echo -e "BBR has been successfully ${GREEN}enabled${NC}"
+else
+	echo "BBR activation failed. Please check your system configuration"
+fi
+
+# 显示可用的 TCP 拥塞控制算法
+echo "Available TCP congestion control algorithms: $(cat /proc/sys/net/ipv4/tcp_available_congestion_control)"
+
+# 显示当前的 TCP 拥塞控制算法
+echo -e "Current TCP congestion control algorithm: ${BLUE}$(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}')${NC}"
