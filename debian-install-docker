@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# 在 Debian 上安装 Docker，步骤和官方教程完全相符：https://docs.docker.com/engine/install/debian/
+set -e
+
+# 函数：检查命令是否存在
+command_exists() {
+    command -v "$@" >/dev/null 2>&1
+}
+
+# 函数：检查是否为 root 用户
+check_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root. Please use sudo or run as root."
+        exit 1
+    fi
+}
+
+# 检查 root 权限
+check_root
+
+# 卸载可能冲突的包
+echo "Uninstalling old versions..."
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get remove $pkg; done
+
+# 设置 Docker 的 apt 存储库
+echo "Setting up Docker's apt repository..."
+# Add Docker's official GPG key:
+apt-get update
+apt-get install ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+    tee /etc/apt/sources.list.d/docker.list >/dev/null
+apt-get update
+
+# 安装 Docker
+echo "Installing Docker..."
+apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 验证 Docker 安装
+echo "Verifying Docker installation..."
+if command_exists docker; then
+    echo "Docker installed successfully!"
+    docker run hello-world
+else
+    echo "Docker installation failed. Please check the error messages and try again."
+    exit 1
+fi
+
+# 提示添加用户到 docker 组
+echo "
+To use Docker without sudo, you can add your user to the docker group:
+    sudo usermod -aG docker $USER
+Note: You need to log out and log back in for this to take effect.
+"
+
+echo "Docker installation and configuration completed."
