@@ -9,6 +9,13 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# 安装 gpg（如果尚未安装）
+if ! command -v gpg &>/dev/null; then
+    echo "Installing gpg..."
+    apt-get update
+    apt-get install -y gnupg
+fi
+
 # 显示 GPG 密钥信息
 curl -fsSL https://pkgs.zabbly.com/key.asc | gpg --show-keys --fingerprint
 
