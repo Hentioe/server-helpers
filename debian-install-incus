@@ -47,7 +47,7 @@ https://linuxcontainers.org/incus/docs/main/tutorial/first_steps/
 To avoid using sudo with Incus, you can add your user to the incus-admin group.
 Run the following command:
 
-    sudo usermod -aG incus-admin $USER
+    sudo usermod -aG incus-admin \$USER
 
 After adding yourself to the group, you'll need to log out and log back in for the changes to take effect.
 "

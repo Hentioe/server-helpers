@@ -55,7 +55,7 @@ fi
 # 提示添加用户到 docker 组
 echo "
 To use Docker without sudo, you can add your user to the docker group:
-    sudo usermod -aG docker $USER
+    sudo usermod -aG docker \$USER
 Note: You need to log out and log back in for this to take effect.
 "
 
