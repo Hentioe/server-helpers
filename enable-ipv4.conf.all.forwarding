@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# 检查是否以 root 权限运行
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root"
+    exit 1
+fi
+
+# 定义要设置的参数
+PARAM="net.ipv4.conf.all.forwarding"
+
+# 设置参数
+if grep -q "$PARAM" /etc/sysctl.conf; then
+    # 如果存在，启用它
+    sed -i "s/^#*$PARAM=.*/$PARAM=1/" /etc/sysctl.conf
+else
+    # 如果不存在，添加它
+    echo "$PARAM=1" >>/etc/sysctl.conf
+fi
+
+# 应用更改
+sysctl -p
+
+echo "IPv4 forwarding has been successfully enabled"
