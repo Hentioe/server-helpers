@@ -31,10 +31,10 @@ echo "Downloaded config.yaml file."
     $DOCKER_CMD compose up -d
 )
 
-echo "Starting promtail. Displaying logs:"
-$DOCKER_CMD compose -f promtail/docker-compose.yml logs -f
-
 echo "
+Starting promtail, display the logs:
+    $DOCKER_CMD compose -f promtail/docker-compose.yml logs -f
+
 Edit the \`promtail/config.yaml\` file to customize the promtail configuration:
     vi promtail/config.yaml
 
