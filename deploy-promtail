@@ -21,9 +21,9 @@ fi
 curl -sSL https://raw.githubusercontent.com/Hentioe/dockerized-apps/master/promtail/docker-compose.yml -o promtail/docker-compose.yml
 echo "Downloaded docker-compose.yml file."
 
-# 下载 config.yml 文件
-curl -sSL https://raw.githubusercontent.com/Hentioe/dockerized-apps/master/promtail/docker.elixir.config.yml -o promtail/config.yml
-echo "Downloaded config.yml file."
+# 下载 config.yaml 文件
+curl -sSL https://raw.githubusercontent.com/Hentioe/dockerized-apps/master/promtail/docker.elixir.config.yaml -o promtail/config.yaml
+echo "Downloaded config.yaml file."
 
 # 在 promtail 文件夹中启动服务，但不改变当前目录
 (
@@ -33,3 +33,11 @@ echo "Downloaded config.yml file."
 
 echo "Starting promtail. Displaying logs:"
 $DOCKER_CMD compose -f promtail/docker-compose.yml logs -f
+
+echo "
+Edit the \`promtail/config.yaml\` file to customize the promtail configuration:
+    vi promtail/config.yaml
+
+Restart the promtail service:
+    $DOCKER_CMD compose -f promtail/docker-compose.yml restart
+"
