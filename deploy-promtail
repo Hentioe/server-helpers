@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+
+# 检查是否为 root 用户
+if [ "$(id -u)" -eq 0 ]; then
+    DOCKER_CMD="docker"
+else
+    DOCKER_CMD="sudo docker"
+fi
+
+# 检查 promtail 文件夹是否存在
+if [ -d "promtail" ]; then
+    echo "The \`promtail\` directory already exists. Skipping creation."
+else
+    mkdir promtail
+    echo "Created promtail directory."
+fi
+
+# 下载 docker-compose.yml 文件
+curl -sSL https://raw.githubusercontent.com/Hentioe/dockerized-apps/master/promtail/docker-compose.yml -o promtail/docker-compose.yml
+echo "Downloaded docker-compose.yml file."
+
+# 下载 config.yml 文件
+curl -sSL https://raw.githubusercontent.com/Hentioe/dockerized-apps/master/promtail/docker.elixir.config.yml -o promtail/config.yml
+echo "Downloaded config.yml file."
+
+# 在 promtail 文件夹中启动服务，但不改变当前目录
+(
+    cd promtail
+    $DOCKER_CMD compose up -d
+)
+
+echo "Starting promtail. Displaying logs:"
+$DOCKER_CMD compose -f promtail/docker-compose.yml logs -f
