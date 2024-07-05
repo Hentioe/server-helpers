@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# 默认远程分支为 origin/main
+remote_branch=${1:-origin/main}
+
+# 定义颜色
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# 警告信息
+echo -e "${YELLOW}WARNING: This script will forcefully synchronize your local repository with $remote_branch.${NC}
+All local changes and commits that haven't been pushed will be lost.
+Press Enter to continue or Ctrl+C to abort..."
+read -r
+
+# 执行 git fetch --all
+echo "Fetching all remotes..."
+git fetch --all
+
+# 如果 fetch 失败，退出脚本
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to fetch from remote. Aborting."
+    exit 1
+fi
+
+# 执行 git reset --hard
+echo "Resetting local branch to $remote_branch..."
+git reset --hard "$remote_branch"
+
+# 如果 reset 失败，退出脚本
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to reset to $remote_branch. Aborting."
+    exit 1
+fi
+
+echo "Successfully synchronized with $remote_branch."
