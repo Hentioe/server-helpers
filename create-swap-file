@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# 创建交换文件
+
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+# 设置默认大小为 2GB
+DEFAULT_SIZE="2G"
+
+# 获取传入的大小参数，如果没有则使用默认值
+size=${1:-$DEFAULT_SIZE}
+
+# 将大小转换为大写
+size_upper=$(echo $size | tr '[:lower:]' '[:upper:]')
+
+# 将大小转换为字节
+size_in_bytes=$(numfmt --from=iec $size_upper)
+
+# 检查是否有足够的空间
+available_space=$(df -B1 --output=avail / | tail -n 1)
+if [ $available_space -lt $size_in_bytes ]; then
+  echo "Error: Not enough space to create a $size swapfile."
+  exit 1
+fi
+
+# 检查是否已存在 swapfile
+if [ -f /swapfile ]; then
+  echo "Swapfile already exists. Updating..."
+  swapoff /swapfile
+  rm /swapfile
+else
+  echo "Creating new swapfile..."
+fi
+
+# 创建 swapfile
+dd if=/dev/zero of=/swapfile bs=1M count=$((size_in_bytes / 1024 / 1024)) status=progress
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+
+# 更新 /etc/fstab
+if ! grep -q "^/swapfile" /etc/fstab; then
+  echo "/swapfile none swap defaults 0 0" >>/etc/fstab
+  echo "Added swapfile entry to /etc/fstab"
+else
+  echo "Swapfile entry already exists in /etc/fstab"
+fi
+
+echo "Swapfile setup complete. Size: $size"
