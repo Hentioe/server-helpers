@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# 设置版本变量
+VERSION="v2.29.0"
+
+# 检查是否为 root 用户
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must be run as root. Please use sudo or run as root user."
+  exit 1
+fi
+
+# 获取系统架构
+ARCH=$(dpkg --print-architecture)
+
+# 根据架构选择下载文件
+if [ "$ARCH" = "arm64" ]; then
+  FILENAME="dua-$VERSION-aarch64-unknown-linux-musl.tar.gz"
+elif [ "$ARCH" = "amd64" ]; then
+  FILENAME="dua-$VERSION-x86_64-unknown-linux-musl.tar.gz"
+else
+  echo "Unsupported architecture: $ARCH"
+  exit 1
+fi
+
+# 设置下载 URL
+DOWNLOAD_URL="https://github.com/Byron/dua-cli/releases/download/$VERSION/$FILENAME"
+
+# 下载文件
+echo "Downloading $FILENAME..."
+wget "$DOWNLOAD_URL" -O "$FILENAME"
+
+# 检查下载是否成功
+if [ $? -ne 0 ]; then
+  echo "Download failed. Please check your internet connection and try again."
+  exit 1
+fi
+
+# 解压文件
+echo "Extracting $FILENAME..."
+tar -xzf "$FILENAME"
+
+# 提取目录名（不包含 .tar.gz）
+DIR_NAME="${FILENAME%.tar.gz}"
+
+# 复制 dua 到 /usr/local/bin 并添加执行权限
+echo "Installing dua to /usr/local/bin..."
+cp "$DIR_NAME/dua" /usr/local/bin/
+chmod +x /usr/local/bin/dua
+
+# 清理下载的文件和解压的目录
+echo "Cleaning up..."
+rm -f "$FILENAME"
+rm -rf "$DIR_NAME"
+
+echo "Installation complete. You can now use 'dua' command."
