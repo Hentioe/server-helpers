@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # 设置版本变量
-VERSION="v2.29.0"
+VERSION="v2.30.0"
 
 # 检查是否为 root 用户
 if [ "$(id -u)" -ne 0 ]; then
