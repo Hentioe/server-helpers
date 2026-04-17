@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# 定义目标目录和文件路径
+TARGET_DIR="$HOME/.vim/after/indent"
+TARGET_FILE="$TARGET_DIR/yaml.vim"
+
+# 如果目录不存在，则递归创建目录
+if [ ! -d "$TARGET_DIR" ]; then
+    mkdir -p "$TARGET_DIR"
+fi
+
+# 将配置内容写入文件
+# setlocal indentkeys-=0# 的作用是防止在 YAML 文件中输入 # 时自动取消缩进
+echo "setlocal indentkeys-=0#" > "$TARGET_FILE"
+
+# 检查操作是否成功并输出消息
+if [ $? -eq 0 ]; then
+    echo "Success: The configuration has been written to $TARGET_FILE"
+else
+    echo "Error: Failed to create the configuration file."
+fi
