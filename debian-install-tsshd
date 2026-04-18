@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# 在 Debian 上安装 tsshd: https://github.com/trzsz/tsshd#installation
+
+if [ "$(id -u)" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
+
+set -e
+
+echo "Installing dependencies..."
+apt update && apt install -y curl gpg > /dev/null 2>&1
+
+echo "Configuring repository..."
+KEYRING_PATH="/usr/share/keyrings/trzsz.gpg"
+curl -s 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7074ce75da7cc691c1ae1a7c7e51d1ad956055ca' \
+  | gpg --dearmor --yes -o "$KEYRING_PATH"
+
+echo "deb [signed-by=$KEYRING_PATH] https://ppa.launchpadcontent.net/trzsz/ppa/ubuntu jammy main" \
+  | tee /etc/apt/sources.list.d/trzsz.list > /dev/null
+
+echo "Installing tsshd..."
+apt update > /dev/null
+apt install -y tsshd
+
+echo "Installation completed successfully."
