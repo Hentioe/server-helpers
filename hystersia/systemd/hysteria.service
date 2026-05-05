@@ -1,0 +1,18 @@
+[Unit]
+Description=Hysteria Server with Auto-Routing Rules
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/hysteria
+ExecStart=/usr/local/bin/hysteria-wrapper.sh start
+ExecStop=/usr/local/bin/hysteria-wrapper.sh stop
+Restart=always
+RestartSec=5
+# Ensure rules are cleaned even if the process crashes
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
