@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+# Get the directory of the script itself
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if curl is installed
+if ! command -v curl &> /dev/null; then
+    echo "Error: curl is not installed"
+    exit 1
+fi
+
+# Define the target file path
+HYSTERIA_BIN="$SCRIPT_DIR/hysteria"
+
+download_hysteria() {
+    # Fetch the latest release JSON from GitHub API
+    API_URL="https://api.github.com/repos/apernet/hysteria/releases/latest"
+    RELEASE_JSON=$(curl -s $API_URL)
+
+    # Extract the download URL for linux-amd64
+    DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep -oP '"browser_download_url":\s*"\K[^"]+' | grep "hysteria-linux-amd64" | head -n 1)
+
+    if [ -z "$DOWNLOAD_URL" ]; then
+        echo "Error: Could not find the amd64 linux download URL"
+        exit 1
+    fi
+
+    # Download and save as 'hysteria' in $SCRIPT_DIR
+    echo "Downloading Hysteria..."
+    curl -L -o "$HYSTERIA_BIN" "$DOWNLOAD_URL"
+
+    # Output SHA256 checksum
+    echo "SHA256 checksum:"
+    sha256sum "$HYSTERIA_BIN"
+
+    # Add executable permission
+    chmod +x "$HYSTERIA_BIN"
+    echo "Execution permission added to hysteria"
+}
+
+# Check if the binary already exists
+if [ ! -f "$HYSTERIA_BIN" ]; then
+    download_hysteria
+else
+    echo "Hysteria already exists at $HYSTERIA_BIN, skipping download"
+fi
+
+# Execute version command
+"$HYSTERIA_BIN" version
+
+# Pre-checks
+REQUIRED_FILES=("$HYSTERIA_BIN" "$SCRIPT_DIR/config.yaml" "$SCRIPT_DIR/systemd/hysteria.service" "$SCRIPT_DIR/wrapper.sh")
+for file in "${REQUIRED_FILES[@]}"; do
+    [[ -f "$file" ]] || {
+        echo "Error: $file missing"
+        exit 1
+    }
+done
+[[ $EUID -ne 0 ]] && echo "Error: root required" && exit 1
+
+# 1. Binary & Wrapper Setup
+cp "$HYSTERIA_BIN" /usr/local/bin/hysteria
+chmod +x /usr/local/bin/hysteria
+cp "$SCRIPT_DIR/wrapper.sh" /usr/local/bin/hysteria-wrapper.sh
+chmod +x /usr/local/bin/hysteria-wrapper.sh
+
+# 2. Certificate Generation
+mkdir -p /etc/hysteria
+openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt -subj "/CN=bing.com" -days 3650 2>/dev/null
+
+# 3. Config & Password Injection
+# Template variable in config.yaml should be: ${HY_PASSWORD}
+export HY_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)
+envsubst '${HY_PASSWORD}' <"$SCRIPT_DIR/config.yaml" >/etc/hysteria/config.yaml
+echo "Password: $HY_PASSWORD"
+
+# 4. Systemd Service
+cp "$SCRIPT_DIR/systemd/hysteria.service" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now hysteria
+
+# 5. Live Logs
+journalctl -u hysteria -f
