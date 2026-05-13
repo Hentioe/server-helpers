@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Check dependencies
+for cmd in curl unzip sudo; do
+	if ! command -v $cmd &>/dev/null; then
+		echo "Error: $cmd is not installed."
+		exit 1
+	fi
+done
+
+# Set variables
+TMP_DIR="/tmp/rclone_install"
+ZIP_FILE="/tmp/rclone-current-linux-amd64.zip"
+DOWNLOAD_URL="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
+
+# Download and extract
+curl -L -o "$ZIP_FILE" "$DOWNLOAD_URL"
+mkdir -p "$TMP_DIR"
+unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+cd "$TMP_DIR"/rclone-*-linux-amd64
+
+# Install binary
+sudo cp rclone /usr/bin/
+sudo chown root:root /usr/bin/rclone
+sudo chmod 755 /usr/bin/rclone
+
+# Install manpages
+sudo mkdir -p /usr/local/share/man/man1
+sudo cp rclone.1 /usr/local/share/man/man1/
+sudo mandb &>/dev/null
+
+# Cleanup
+rm -rf "$TMP_DIR" "$ZIP_FILE"
+
+# Show version and configure
+rclone version
+rclone config
